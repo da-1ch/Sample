@@ -493,7 +493,7 @@
     <input type="text" id="profileName" placeholder="名無し" style="width: 10%; height: auto; min-width: 200px;">
   </div>
 
-  <button onclick="alert('プロフィールが変更されました！')">保存</button>
+  <button onclick="saveProfile()">保存</button>
 <hr style="margin: 2rem 0; border: none; border-top: 1.5px solid #f8bbd0;">
 <h3>データの削除</h3>
   <p style="color: #4e342e;">保存されたデータをリセットします。</p>
@@ -559,10 +559,11 @@
         hour: "2-digit", minute: "2-digit", second: "2-digit"
       });
       const id = Date.now();
-      const entry = { id, text: diaryText, timestamp: dateStr };
-
-      diaryEntries.push(entry);
-      localStorage.setItem("diaryEntries", JSON.stringify(diaryEntries));
+      const profileName = localStorage.getItem('profileName') || '名無し';
+const profileIcon = localStorage.getItem('profileIcon') || './src/profileIcon.png';
+const entry = { id, text: diaryText, timestamp: dateStr, profileName, profileIcon };
+diaryEntries.push(entry);
+localStorage.setItem("diaryEntries", JSON.stringify(diaryEntries));
       updateDiaryDisplay();
       updateDiaryListForReply();
 
@@ -571,7 +572,9 @@
 
     function updateDiaryDisplay() {
       const display = document.getElementById("diaryDisplay");
-      display.innerHTML = diaryEntries.map(entry =>
+      const myName = localStorage.getItem('profileName') || '名無し';
+      const myDiaries = diaryEntries.filter(entry => entry.profileName === myName);
+      display.innerHTML = myDiaries.map(entry =>
         `<div class="diary-entry" onclick="viewDiaryAndRepliesOnReplyPage(${entry.id})">
           <strong>${entry.timestamp}</strong><br>${entry.text.replace(/\n/g, '<br>')}
         </div>`
@@ -585,29 +588,29 @@
         return;
       }
       container.innerHTML = diaryEntries.map(entry => `
-  <div class="diary-list-item" id="diaryListItem_${entry.id}">
-    <div class="diary-and-button-wrapper">
-      <div style="display: flex; flex-direction: column; align-items: center; margin-right: 0.8rem;">
-        <img src="${localStorage.getItem('profileIcon') || './src/profileIcon.png'}" alt="アイコン" style="width: 48px; height: 48px; border-radius: 10%; object-fit: cover;">
-        <span style="font-size: 0.9rem; color: #880e4f; margin-top: 0.3rem;">${localStorage.getItem('profileName') || '名無し'}</span>
-      </div>
-      <div style="display: flex; flex-direction: column;">
-        <div class="diary-entry">
-          <div>${entry.text.replace(/\n/g, '<br>')}</div>
+    <div class="diary-list-item" id="diaryListItem_${entry.id}">
+      <div class="diary-and-button-wrapper">
+        <div style="display: flex; flex-direction: column; align-items: center; margin-right: 0.8rem;">
+          <img src="${entry.profileIcon || './src/profileIcon.png'}" alt="アイコン" style="width: 48px; height: 48px; border-radius: 10%; object-fit: cover;">
+          <span style="font-size: 0.9rem; color: #880e4f; margin-top: 0.3rem;">${entry.profileName || '名無し'}</span>
         </div>
-        <div class="diary-timestamp" style="position: static; margin-top: -15px; align-self: flex-end;">
-          ${entry.timestamp}
+        <div style="display: flex; flex-direction: column;">
+          <div class="diary-entry">
+            <div>${entry.text.replace(/\n/g, '<br>')}</div>
+          </div>
+          <div class="diary-timestamp" style="position: static; margin-top: 0; align-self: flex-end;">
+            ${entry.timestamp}
+          </div>
         </div>
+        <button class="reply-button" onclick="openReplyModal(${entry.id})" title="この投稿にリプライ">
+          <img src="./src/reply-icon.png" alt="この投稿にリプライ">
+        </button>
       </div>
-      <button class="reply-button" onclick="openReplyModal(${entry.id})" title="この投稿にリプライ">
-        <img src="./src/reply-icon.png" alt="この投稿にリプライ">
-      </button>
+      <div class="replies-container">
+        ${renderReplies(entry.id)}
+      </div>
     </div>
-    <div class="replies-container">
-      ${renderReplies(entry.id)}
-    </div>
-  </div>
-`).join("");
+  `).join("");
     }
 
     function renderReplies(diaryId) {
@@ -782,6 +785,20 @@
       alert("データを削除しました");
       showPage('diaryPage'); // 履歴削除後に日記投稿画面へ遷移
     }
+
+    function saveProfile() {
+  // 名前を保存
+  const name = document.getElementById('profileName').value.trim();
+  localStorage.setItem('profileName', name || '名無し');
+
+  // アイコン画像も保存（base64形式）
+  const iconSrc = document.getElementById('profilePreview').src;
+  localStorage.setItem('profileIcon', iconSrc);
+
+  alert('プロフィールが変更されました！');
+  updateDiaryDisplay();
+  updateDiaryListForReply();
+}
 
     window.onload = () => {
         loadSavedData();
